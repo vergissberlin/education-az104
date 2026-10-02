@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { createStudyServer } from '../scripts/serve.mjs';
 
@@ -11,8 +12,13 @@ test('local server serves the study app and sources but does not expose reposito
   const base = `http://127.0.0.1:${server.address().port}`;
   const response = await fetch(base);
   assert.equal(response.status, 200);
-  assert.match(await response.text(), /AZ-104 Practice/);
+  const html = await response.text();
+  assert.match(html, /AZ-104 Practice/);
   assert.match(response.headers.get('content-security-policy'), /default-src 'self'/);
+  assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)/, 'inline scripts violate the CSP');
+  const theme = await fetch(base + '/theme.js');
+  assert.equal(theme.status, 200);
+  assert.match(theme.headers.get('content-type'), /text\/javascript/);
   const bank = await (await fetch(base + '/data.json')).json();
   assert.ok(bank.questions.length > 0);
   assert.ok(bank.coverage.total >= bank.coverage.covered);
@@ -28,4 +34,10 @@ test('local server serves the study app and sources but does not expose reposito
   const head = await fetch(base, { method: 'HEAD' });
   assert.equal(head.status, 200);
   assert.equal(await head.text(), '');
+  // The footer version must match package.json and the changelog must be reachable.
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.deepEqual(await (await fetch(base + '/version.json')).json(), { version: pkg.version });
+  const changelog = await fetch(base + '/CHANGELOG.md');
+  assert.equal(changelog.status, 200);
+  assert.match(await changelog.text(), /^# Changelog/);
 });

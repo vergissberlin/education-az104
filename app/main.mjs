@@ -1,5 +1,5 @@
 import { renderMarkdown, resolveDoc, isDocPath, slugify } from './markdown.mjs';
-import { makeQuiz, score, missedFamilies, parseProgress } from './quiz.mjs';
+import { makeQuiz, score, familyStatus, reviewFamilies, isUnsure, parseProgress } from './quiz.mjs';
 
 const $ = id => document.getElementById(id);
 const STORAGE = 'az104-progress-v1';
@@ -28,8 +28,11 @@ function save() {
 }
 function summarize() {
   const map = new Map(bank.questions.map(q => [q.id, q]));
-  const correct = attempts.filter(a => score(map.get(a.id), a.selected)).length;
-  $('progress').textContent = `${attempts.length} recorded answers · ${correct} correct · ${missedFamilies(attempts, bank.questions).size} currently missed families`;
+  const correct = attempts.filter(a => !isUnsure(a) && score(map.get(a.id), a.selected)).length;
+  const status = [...familyStatus(attempts, bank.questions).values()];
+  const count = kind => status.filter(s => s === kind).length;
+  const families = new Set(bank.questions.map(q => q.family)).size;
+  $('progress').textContent = `${attempts.length} recorded answers · ${correct} correct · Current state of ${families} families: ${count('wrong')} wrong · ${count('unsure')} unsure · ${families - status.length} not yet answered`;
 }
 function reference(href, text) {
   const link = el('a', text); link.href = href; link.target = '_blank'; link.rel = 'noopener'; return link;
@@ -39,9 +42,10 @@ function topicContext(q) {
   if (!topic) return q.topic;
   return `${topic.domain[0].toUpperCase()}${topic.domain.slice(1)} › ${topic.title}`;
 }
-function explain(q, selected, compact = false) {
+function explain(q, selected, compact = false, unsure = false) {
   const box = el('div');
-  box.append(el('p', score(q, selected) ? 'Correct answer set.' : 'Incorrect answer set.', `border-l-4 pl-3.5 ${score(q, selected) ? 'border-good' : 'border-bad'}`));
+  box.append(unsure ? el('p', 'Marked as unsure — saved for later review. This does not count as correct.', 'border-l-4 border-notice-line pl-3.5')
+    : el('p', score(q, selected) ? 'Correct answer set.' : 'Incorrect answer set.', `border-l-4 pl-3.5 ${score(q, selected) ? 'border-good' : 'border-bad'}`));
   for (const option of q.options) {
     const good = q.correct.includes(option.id);
     if (compact && !selected.includes(option.id) && !good) continue;
@@ -63,28 +67,29 @@ function renderQuestion() {
   $('instruction').textContent = `Select ${q.select} answer${q.select === 1 ? '' : 's'}.`;
   $('choices').replaceChildren($('instruction'));
   q.options.forEach((option, i) => {
-    const label = el('label', undefined, 'my-3 flex cursor-pointer gap-3 rounded-md border border-edge p-4 font-normal has-checked:border-brand has-checked:bg-selected');
+    const label = el('label', undefined, 'choice my-3 flex cursor-pointer gap-3 rounded-md border border-edge p-4 font-normal has-checked:border-brand has-checked:bg-selected');
     const input = document.createElement('input'); input.type = q.select === 1 ? 'radio' : 'checkbox';
     input.className = 'mt-1.5 shrink-0'; input.name = 'answer'; input.value = option.id;
     label.append(input, el('span', `${String.fromCharCode(65 + i)}. ${option.text}`));
     $('choices').append(label);
   });
-  $('choices').disabled = false; $('submit-answer').hidden = false;
+  $('choices').disabled = false; $('submit-answer').hidden = false; $('unsure-answer').hidden = false;
   $('submit-answer').textContent = mode === 'practice' ? 'Check answer' : 'Submit answer';
   $('feedback').replaceChildren(); $('next').hidden = true;
   $('prompt').focus();
 }
 function finish() {
-  const correct = answers.filter(a => score(a.q, a.selected)).length;
+  const ok = a => !a.unsure && score(a.q, a.selected);
+  const correct = answers.filter(ok).length, unsure = answers.filter(a => a.unsure).length;
   $('result-score').textContent = answers.length
-    ? `${correct}/${answers.length} correct (${Math.round(correct / answers.length * 100)}%) · ${answers.length}/${active.length} planned questions answered`
+    ? `${correct}/${answers.length} correct (${Math.round(correct / answers.length * 100)}%) · ${answers.length - correct - unsure} wrong · ${unsure} unsure · ${answers.length}/${active.length} planned questions answered`
     : 'No questions answered in this session.';
   $('review').replaceChildren();
   answers.forEach((a, i) => {
     const details = el('details', undefined, 'border-t border-line py-4');
-    details.open = !score(a.q, a.selected);
-    details.append(el('summary', `${i + 1}. ${score(a.q, a.selected) ? 'Correct' : 'Review'} — ${a.q.prompt}`, 'cursor-pointer font-semibold'),
-      el('p', topicContext(a.q), 'text-[.86rem] text-soft'), explain(a.q, a.selected, true));
+    details.open = !ok(a);
+    details.append(el('summary', `${i + 1}. ${a.unsure ? 'Unsure' : ok(a) ? 'Correct' : 'Review'} — ${a.q.prompt}`, 'cursor-pointer font-semibold'),
+      el('p', topicContext(a.q), 'text-[.86rem] text-soft'), explain(a.q, a.selected, true, a.unsure));
     $('review').append(details);
   });
   show('results'); $('result-title').focus();
@@ -95,25 +100,34 @@ $('start-form').addEventListener('submit', event => {
   try {
     active = makeQuiz(bank.questions, { topic: $('topic').value, count: Number($('count').value),
       domains: bank.domains, topics: bank.topics,
-      missed: $('missed').checked ? missedFamilies(attempts, bank.questions) : null });
-    if (!active.length) { message('No question families match this selection. Change the topic or turn off missed-question review.'); return; }
+      missed: $('review').value === 'none' ? null : reviewFamilies(attempts, bank.questions, $('review').value) });
+    if (!active.length) { message('No question families match this selection. Change the topic or the review filter.'); return; }
     if (active.length < Number($('count').value)) message(`This selection has ${active.length} available families; the session uses all of them.`);
     mode = $('mode').value; position = 0; answers = []; show('session'); renderQuestion();
   } catch (error) { message(error.message); }
 });
+function record(q, selected, unsure = false) {
+  message(); submitted = true; answers.push({ q, selected, unsure });
+  attempts.push({ id: q.id, revision: q.revision, selected, ...(unsure && { unsure: true }), at: new Date().toISOString() });
+  attempts = attempts.slice(-10000); save();
+  if (mode === 'test') { advance(); return; }
+  $('choices').disabled = true; $('submit-answer').hidden = true; $('unsure-answer').hidden = true;
+  $('feedback').append(explain(q, selected, false, unsure));
+  $('next').hidden = false; $('next').textContent = position + 1 === active.length ? 'View results' : 'Next question';
+  $('next').focus();
+}
 $('answer-form').addEventListener('submit', event => {
   event.preventDefault(); if (submitted) return;
   const q = active[position];
   const selected = [...$('choices').querySelectorAll('input:checked')].map(input => input.value);
-  if (selected.length !== q.select) { message(`Select exactly ${q.select} answer${q.select === 1 ? '' : 's'} before submitting.`); return; }
-  message(); submitted = true; answers.push({ q, selected });
-  attempts.push({ id: q.id, revision: q.revision, selected, at: new Date().toISOString() });
-  attempts = attempts.slice(-10000); save();
-  if (mode === 'test') { advance(); return; }
-  $('choices').disabled = true; $('submit-answer').hidden = true;
-  $('feedback').append(explain(q, selected));
-  $('next').hidden = false; $('next').textContent = position + 1 === active.length ? 'View results' : 'Next question';
-  $('next').focus();
+  if (selected.length !== q.select) { message(`Select exactly ${q.select} answer${q.select === 1 ? '' : 's'} before submitting, or choose "I'm unsure".`); return; }
+  record(q, selected);
+});
+$('unsure-answer').addEventListener('click', () => { if (!submitted) record(active[position], [], true); });
+document.addEventListener('keydown', event => {
+  if (view !== 'session' || submitted || event.key.toLowerCase() !== 'u' || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.target.closest?.('input, select, textarea')) return;
+  event.preventDefault(); $('unsure-answer').click();
 });
 function advance() { if (++position < active.length) renderQuestion(); else finish(); }
 $('next').addEventListener('click', advance);
@@ -170,10 +184,15 @@ async function route() {
   if (target) target.scrollIntoView(); else { window.scrollTo(0, 0); body.focus({ preventScroll: true }); }
 }
 window.addEventListener('hashchange', route);
+// The version is informational; a failed lookup must not block the quiz.
+try {
+  const { version } = await (await fetch(new URL('./version.json', import.meta.url))).json();
+  if (typeof version === 'string' && /^\d+\.\d+\.\d+/.test(version)) $('version').textContent = `Version ${version}`;
+} catch { $('version').textContent = ''; }
 
 try {
   const response = await fetch(new URL('./data.json', import.meta.url));
-  if (!response.ok) throw new Error('Question data could not be loaded. Run npm run build.');
+  if (!response.ok) throw new Error('Question data could not be loaded. Run pnpm run build.');
   bank = await response.json();
   if (bank.schemaVersion !== 1 || !Array.isArray(bank.questions)) throw new Error('Unsupported question bank.');
   bank.topics.forEach(topic => {
