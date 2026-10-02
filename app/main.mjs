@@ -1,3 +1,4 @@
+import { renderMarkdown, resolveDoc, isDocPath, slugify } from './markdown.mjs';
 import { makeQuiz, score, missedFamilies, parseProgress } from './quiz.mjs';
 
 const $ = id => document.getElementById(id);
@@ -18,7 +19,8 @@ function applyTheme(theme, persist = false) {
 $('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true));
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 function message(text = '') { $('message').textContent = text; }
-function show(id) { for (const name of ['setup', 'session', 'results']) $(name).hidden = name !== id; }
+let view = 'setup';
+function show(id) { view = id; for (const name of ['setup', 'session', 'results', 'doc']) $(name).hidden = name !== id; }
 function save() {
   if (!storageWritable) { message('Existing unreadable progress was preserved. Export new answers to save them; automatic storage is disabled for this session.'); return; }
   try { localStorage.setItem(STORAGE, JSON.stringify({ version: 1, attempts })); }
@@ -48,7 +50,7 @@ function explain(q, selected, compact = false) {
     p.append(el('strong', `${good ? 'Correct' : 'Incorrect'} option${selected.includes(option.id) ? ' · selected' : ''}: ${option.text} `), document.createTextNode(option.explanation));
     box.append(p);
   }
-  const links = el('p'); links.append(reference(new URL(q.knowledge, new URL('.', import.meta.url)).href, 'Study this topic'));
+  const links = el('p'); const study = el('a', 'Study this topic'); study.href = `#/doc/${q.knowledge.replace(/^\.\//, '')}`; links.append(study);
   q.sources.forEach((url, i) => links.append(document.createTextNode(' · '), reference(url, `Microsoft source ${i + 1}`)));
   box.append(links, el('p', `Evidence checked ${q.verified} · ${q.id}`, 'text-[.86rem] text-soft'));
   return box;
@@ -133,6 +135,42 @@ $('import').addEventListener('change', async event => {
   finally { event.target.value = ''; }
 });
 
+// Markdown viewer: #/doc/<path>[#anchor]. Documents are fetched from the same origin and rendered as DOM nodes.
+const DOC_ROUTE = /^#\/doc\/([^#]+)(?:#(.*))?$/;
+let docReturn = 'setup';
+async function route() {
+  const m = DOC_ROUTE.exec(decodeURIComponent(location.hash));
+  if (!m) { if (view === 'doc') show(docReturn); return; }
+  const [, path, anchor] = m;
+  if (view !== 'doc') docReturn = view;
+  show('doc');
+  const body = $('doc-body'), raw = new URL(path, new URL('.', import.meta.url)).href;
+  $('doc-raw').href = raw;
+  if (body.dataset.path !== path) {
+    body.dataset.path = path; body.replaceChildren(el('p', 'Loading…'));
+    try {
+      if (!isDocPath(path)) throw new Error('This document is not available.');
+      const response = await fetch(raw);
+      if (!response.ok) throw new Error(`Document not found (${response.status}).`);
+      const text = await response.text();
+      if (body.dataset.path !== path) return; // a newer navigation won
+      const link = href => {
+        if (/^https?:/.test(href)) return { href, external: true };
+        if (href.startsWith('#')) return { href: `#/doc/${path}#${href.slice(1)}` };
+        const [file, frag] = href.split('#');
+        const target = resolveDoc(path, file);
+        if (!target) return { href: new URL(file, new URL(path, new URL('.', import.meta.url))).href, external: true };
+        return target.endsWith('.md') ? { href: `#/doc/${target}${frag ? '#' + frag : ''}` } : { href: new URL(target, new URL('.', import.meta.url)).href, external: true };
+      };
+      body.replaceChildren(renderMarkdown(text, link));
+      document.title = `${body.querySelector('h1')?.textContent ?? path} · AZ-104 Practice`;
+    } catch (error) { body.dataset.path = ''; body.replaceChildren(el('p', error.message, 'bg-warn p-3 text-warn-ink')); }
+  }
+  const target = anchor && document.getElementById(slugify(anchor)) || (anchor && document.getElementById(anchor));
+  if (target) target.scrollIntoView(); else { window.scrollTo(0, 0); body.focus({ preventScroll: true }); }
+}
+window.addEventListener('hashchange', route);
+
 try {
   const response = await fetch(new URL('./data.json', import.meta.url));
   if (!response.ok) throw new Error('Question data could not be loaded. Run npm run build.');
@@ -152,3 +190,4 @@ try {
   } catch { storageWritable = false; message('Saved progress could not be read and will not be overwritten. New answers can be exported; automatic storage is disabled for this session.'); }
   summarize(); show('setup');
 } catch (error) { message(error.message); $('coverage').textContent = 'Question bank unavailable.'; }
+await route(); // deep links such as #/doc/knowledge/index.md work even if the question bank failed to load

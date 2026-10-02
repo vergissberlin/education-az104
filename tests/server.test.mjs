@@ -19,6 +19,8 @@ test('local server serves the study app and sources but does not expose reposito
   const md = await fetch(base + '/knowledge/storage/blob-storage/containers.md');
   assert.equal(md.status, 200);
   assert.match(md.headers.get('content-type'), /text\/plain/);
+  assert.equal((await fetch(base + '/markdown.mjs')).status, 200);
+  assert.equal((await fetch(base + '/README.md')).status, 200);
   for (const target of ['/.git/config', '/package.json', '/%2e%2e/package.json', '/knowledge/%2e%2e/AGENTS.md', '/missing', '/%ZZ']) {
     assert.equal((await fetch(base + target)).status, 404, target);
   }

@@ -2,6 +2,7 @@
 @import "tailwindcss" source(none);
 @source "./index.html";
 @source "./main.mjs";
+@source "./markdown.mjs";
 
 @theme {
   --font-sans: system-ui, sans-serif;
@@ -71,4 +72,22 @@
   .theme-toggle .sun { display: none; }
   :root[data-theme=dark] .theme-toggle .sun { display: block; }
   :root[data-theme=dark] .theme-toggle .moon { display: none; }
+  /* Rendered Markdown documents (see markdown.mjs). */
+  .md { @apply outline-none; overflow-wrap: anywhere; }
+  .md h1 { @apply mt-4 mb-3 text-[1.8rem] leading-tight font-bold tracking-tight; }
+  .md h2 { @apply mt-8 mb-2 text-[1.35rem] leading-snug font-bold; }
+  .md h3, .md h4, .md h5, .md h6 { @apply mt-6 mb-2 font-bold; }
+  .md p, .md ul, .md ol, .md pre, .md blockquote, .md .md-table { @apply my-3; }
+  .md ul { @apply list-disc pl-6; }
+  .md ol { @apply list-decimal pl-6; }
+  .md li > ul, .md li > ol { @apply my-1; }
+  .md code { @apply rounded-sm bg-notice px-1 text-[.9em]; }
+  .md pre { @apply overflow-x-auto rounded-md border border-line bg-notice p-3 text-[.86rem]; }
+  .md pre code { @apply bg-transparent p-0; }
+  .md blockquote { @apply border-l-4 border-notice-line bg-notice px-4 py-1; }
+  .md hr { @apply my-6 border-line; }
+  .md .md-table { @apply overflow-x-auto; }
+  .md table { @apply w-full border-collapse text-[.9rem]; }
+  .md th, .md td { @apply border border-line px-2.5 py-1.5 text-left align-top; }
+  .md th { @apply bg-selected; }
 }

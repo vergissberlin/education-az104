@@ -26,6 +26,7 @@ Printable questions and answers now include domain/topic context.
 
 Implemented app behavior:
 
+- Coverage, Knowledge index, Printable questions and "Study this topic" open in an in-app Markdown viewer (`#/doc/<path>`, `app/markdown.mjs`) instead of raw `.md` files.
 - Test submission advances directly to the next question or final results.
 - Preparation preserves feedback for every option and the Next step.
 - Every question displays its topic; incorrect results open, correct results
