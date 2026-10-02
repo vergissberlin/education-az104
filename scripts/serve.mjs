@@ -4,8 +4,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './content.mjs';
 
-const assets = new Set(['/index.html', '/style.css', '/main.mjs', '/quiz.mjs', '/markdown.mjs', '/data.json', '/version.json']);
-const mime = { '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript', '.json': 'application/json', '.md': 'text/plain' };
+const assets = new Set(['/index.html', '/style.css', '/main.mjs', '/theme.js', '/quiz.mjs', '/markdown.mjs', '/data.json', '/version.json']);
+const mime = { '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json', '.md': 'text/plain' };
 
 export function createStudyServer(root = ROOT, { basePath = '/', staticSite = false } = {}) {
   return http.createServer(async (req, res) => {
