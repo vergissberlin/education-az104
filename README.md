@@ -25,7 +25,7 @@ To run locally:
 Use Node.js 22 or newer. There are no third-party packages to install.
 
 ```sh
-npm start
+pnpm start
 ```
 
 Open <http://127.0.0.1:8080>. Stop the server with Ctrl+C. The server binds only
@@ -75,11 +75,11 @@ You can also study without the app:
 ## Maintain the content
 
 ```sh
-npm run build   # also compiles Tailwind: app/tailwind.css -> app/style.css
-npm run check
-npm test
-npm run build:site
-npm run test:browser
+pnpm run build   # also compiles Tailwind: app/tailwind.css -> app/style.css
+pnpm run check
+pnpm test
+pnpm run build:site
+pnpm run test:browser
 ```
 
 Edit questions in questions/, then rebuild. Do not hand-edit generated/
@@ -100,3 +100,14 @@ next task. Browser tests require Google Chrome (or BROWSER_BIN pointing to a
 Chromium executable) and use a disposable profile.
 
 Personal progress exports can be stored under the ignored progress/ directory.
+
+## Releases
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please)
+from Conventional Commits. On every push to main it maintains a release pull
+request that bumps the version in package.json and app/version.json and
+updates [CHANGELOG.md](CHANGELOG.md). Merging that pull request (requires
+approval) creates the vX.Y.Z tag and GitHub release; the Pages workflow then
+publishes the app. The app footer shows the version and links the changelog.
+The repository setting "Allow GitHub Actions to create and approve pull
+requests" must be enabled for the workflow to open the release pull request.

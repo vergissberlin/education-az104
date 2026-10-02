@@ -67,7 +67,7 @@ function renderQuestion() {
   $('instruction').textContent = `Select ${q.select} answer${q.select === 1 ? '' : 's'}.`;
   $('choices').replaceChildren($('instruction'));
   q.options.forEach((option, i) => {
-    const label = el('label', undefined, 'my-3 flex cursor-pointer gap-3 rounded-md border border-edge p-4 font-normal has-checked:border-brand has-checked:bg-selected');
+    const label = el('label', undefined, 'choice my-3 flex cursor-pointer gap-3 rounded-md border border-edge p-4 font-normal has-checked:border-brand has-checked:bg-selected');
     const input = document.createElement('input'); input.type = q.select === 1 ? 'radio' : 'checkbox';
     input.className = 'mt-1.5 shrink-0'; input.name = 'answer'; input.value = option.id;
     label.append(input, el('span', `${String.fromCharCode(65 + i)}. ${option.text}`));
@@ -184,10 +184,15 @@ async function route() {
   if (target) target.scrollIntoView(); else { window.scrollTo(0, 0); body.focus({ preventScroll: true }); }
 }
 window.addEventListener('hashchange', route);
+// The version is informational; a failed lookup must not block the quiz.
+try {
+  const { version } = await (await fetch(new URL('./version.json', import.meta.url))).json();
+  if (typeof version === 'string' && /^\d+\.\d+\.\d+/.test(version)) $('version').textContent = `Version ${version}`;
+} catch { $('version').textContent = ''; }
 
 try {
   const response = await fetch(new URL('./data.json', import.meta.url));
-  if (!response.ok) throw new Error('Question data could not be loaded. Run npm run build.');
+  if (!response.ok) throw new Error('Question data could not be loaded. Run pnpm run build.');
   bank = await response.json();
   if (bank.schemaVersion !== 1 || !Array.isArray(bank.questions)) throw new Error('Unsupported question bank.');
   bank.topics.forEach(topic => {

@@ -1,7 +1,7 @@
 // Minimal, dependency-free Markdown viewer for the repository's own documents.
 // Builds DOM nodes with textContent only; raw HTML in source is never interpreted.
 
-const DOC_PATH = /^(?:(?:knowledge|generated|questions|examples|exam|docs|templates)\/[a-zA-Z0-9_/-]+|README|PLAN|STATUS)\.(?:md|json)$/;
+const DOC_PATH = /^(?:(?:knowledge|generated|questions|examples|exam|docs|templates)\/[a-zA-Z0-9_/-]+|README|PLAN|STATUS|CHANGELOG)\.(?:md|json)$/;
 
 export function isDocPath(path) { return DOC_PATH.test(path); }
 
