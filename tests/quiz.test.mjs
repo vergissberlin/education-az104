@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { makeQuiz, splitPrompt, score, shuffle, parseProgress, missedFamilies, familyStatus, reviewFamilies, EXAM_DEFAULTS, examMinutes, formatClock, topicStats, compareStats, weakest } from '../app/quiz.mjs';
+import { makeQuiz, splitPrompt, score, shuffle, parseProgress, missedFamilies, familyStatus, reviewFamilies, EXAM_DEFAULTS, examMinutes, formatClock, topicStats, compareStats, weakest, dailyStats } from '../app/quiz.mjs';
 
 const { questions } = JSON.parse(await readFile(new URL('../questions/storage/blob-storage.json', import.meta.url), 'utf8'));
 const single = questions.find(q => q.select === 1);
@@ -215,4 +215,24 @@ test('splitPrompt separates scenario sentences from the final task and never alt
   assert.deepEqual(splitPrompt('Can one subscription have two parents?'), { scenario: [], task: 'Can one subscription have two parents?' });
   const odd = 'Line one.  Two spaces follow. Why?';
   assert.deepEqual(splitPrompt(odd), { scenario: [], task: odd });
+});
+
+test('dailyStats pools every answer per local day, counts unsure as wrong, and ignores stale or out-of-window answers', () => {
+  const now = new Date(2026, 9, 3, 15, 0); // 3 Oct 2026, local
+  const at = (y, m, d, h = 10) => new Date(y, m, d, h).toISOString();
+  const attempts = [
+    answer('a.one.1', true, at(2026, 9, 3)), answer('a.one.1', false, at(2026, 9, 3, 11)), // same family twice: both count
+    { id: 'a.one.2', revision: 1, selected: [], unsure: true, at: at(2026, 9, 3, 12) },
+    { ...answer('a.two.1', true, at(2026, 9, 3)), revision: 9 }, // outdated revision
+    answer('b.one.1', true, at(2026, 9, 1)),
+    answer('b.one.2', true, at(2026, 7, 1)), // older than 60 days
+  ];
+  const days = dailyStats(attempts, bank, { days: 60, now });
+  assert.equal(days.length, 60);
+  assert.equal(days.at(-1).date, '2026-10-03');
+  assert.deepEqual([days.at(-1).answered, days.at(-1).correct], [3, 1]);
+  assert.equal(Math.round(days.at(-1).rate * 100), 33);
+  assert.deepEqual([days.at(-3).answered, days.at(-3).rate], [1, 1]);
+  assert.equal(days.at(-2).rate, null);
+  assert.equal(days.reduce((n, d) => n + d.answered, 0), 4);
 });

@@ -1,6 +1,6 @@
 import { renderMarkdown, resolveDoc, isDocPath, slugify } from './markdown.mjs';
 import { makeQuiz, splitPrompt, score, familyStatus, reviewFamilies, isUnsure, parseProgress, EXAM_DEFAULTS, PRACTICE_DEFAULT_COUNT, examMinutes, formatClock } from './quiz.mjs';
-import { renderAnalysis, unmount } from './analysis.mjs';
+import { renderAnalysis, renderTimeline, unmount } from './analysis.mjs';
 
 const $ = id => document.getElementById(id);
 const STORAGE = 'az104-progress-v1';
@@ -299,6 +299,7 @@ async function route() {
     show('analysis'); document.title = 'Analysis · AZ-104 Practice'; window.scrollTo(0, 0);
     $('analysis-title').focus({ preventScroll: true });
     renderAnalysis($('analysis-chart'), { bank, attempts, mode: 'weakest' });
+    renderTimeline($('analysis-timeline'), { bank, attempts });
     return;
   }
   if (view === 'analysis') document.title = originalTitle;
