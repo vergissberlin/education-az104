@@ -2861,10 +2861,10 @@ An SSH session survives removal of its NSG allow rule, but a new SSH connection 
 
 Select **1**. Difficulty: troubleshooting.
 
-A. NSGs filter only UDP.
-B. Rule removal requires deleting the NIC.
-C. NSGs retain state for existing flows; new connections use the changed rules.
-D. SSH automatically bypasses NSGs after one login.
+A. The subnet NSG evaluates only new connections, while the NIC NSG keeps allowing established ones.
+B. A default inbound rule keeps allowing the first session until the virtual machine restarts.
+C. NSGs track existing flows, so removing the allow rule affects only new connection attempts.
+D. NSG rules are tied to the client's source address, so the original client stays allowed.
 
 ## nw-pe-public
 
@@ -3342,10 +3342,10 @@ An enabled rule tiers a current block blob to cool when daysAfterModificationGre
 
 Select **1**. Difficulty: applied.
 
-A. No; eligibility here depends on last modification, not last read.
-B. Yes; every read resets the last-modified timestamp.
-C. Yes; the condition always uses the container's creation date.
-D. Yes; reading a blob disables lifecycle rules for that container.
+A. No; the condition measures time since the last modification, and a read does not change that timestamp.
+B. Yes; a read counts as an update to the blob, so the 45-day window starts again.
+C. Yes; the condition is evaluated against the blob's last access time once last-access tracking exists.
+D. Yes; the read automatically moves the blob back to hot, which cancels the transition to cool.
 
 ## st-life-004
 

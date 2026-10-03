@@ -3735,12 +3735,12 @@ An SSH session survives removal of its NSG allow rule, but a new SSH connection 
 
 Select **1**. Difficulty: troubleshooting.
 
-- **A. Incorrect:** NSGs filter only UDP. NSGs also filter TCP, including SSH.
-- **B. Incorrect:** Rule removal requires deleting the NIC. NSG changes do not require NIC deletion.
-- **C. Correct:** NSGs retain state for existing flows; new connections use the changed rules. This explains the different outcomes.
-- **D. Incorrect:** SSH automatically bypasses NSGs after one login. Application login does not grant a firewall bypass for new sessions.
+- **A. Incorrect:** The subnet NSG evaluates only new connections, while the NIC NSG keeps allowing established ones. Subnet and NIC NSGs both evaluate inbound traffic, the subnet NSG first, and neither has a separate role for established connections. The behavior comes from per-flow connection state, not from where the NSG is associated.
+- **B. Incorrect:** A default inbound rule keeps allowing the first session until the virtual machine restarts. Default rules are ordinary rules evaluated by priority, and none re-allows a specific session until a restart. Existing connections continue because a flow record exists for them, regardless of the default rules.
+- **C. Correct:** NSGs track existing flows, so removing the allow rule affects only new connection attempts. An NSG creates a flow record for an existing connection and allows or denies its traffic based on that connection state. Rule changes apply only to new connections, so the open SSH session continues. The new SSH attempt is evaluated against the current rules, no rule allows it any longer, and the DenyAllInbound default rule drops it.
+- **D. Incorrect:** NSG rules are tied to the client's source address, so the original client stays allowed. Rules match the five-tuple of source, source port, destination, destination port, and protocol, and removing the rule affects every source. The original session stays up because its flow is already tracked, and a new connection from the same client address is denied as well.
 
-Study: [knowledge file](../knowledge/networking/security/nsg-asg.md). Evidence checked: 2026-10-02.
+Study: [knowledge file](../knowledge/networking/security/nsg-asg.md). Evidence checked: 2026-10-03.
 
 [Microsoft source 1](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview) · [Microsoft source 2](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups) · [Microsoft source 3](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works)
 
@@ -4364,12 +4364,12 @@ An enabled rule tiers a current block blob to cool when daysAfterModificationGre
 
 Select **1**. Difficulty: applied.
 
-- **A. Correct:** No; eligibility here depends on last modification, not last read. Reading the blob does not reset the last-modified timestamp used by this condition. Execution still depends on the policy run.
-- **B. Incorrect:** Yes; every read resets the last-modified timestamp. This confuses access time with modification time.
-- **C. Incorrect:** Yes; the condition always uses the container's creation date. The configured condition refers to the individual blob's modification age.
-- **D. Incorrect:** Yes; reading a blob disables lifecycle rules for that container. Reading data does not disable the account's lifecycle policy.
+- **A. Correct:** No; the condition measures time since the last modification, and a read does not change that timestamp. daysAfterModificationGreaterThan compares the current blob's last-modified time with the threshold. A read leaves that timestamp unchanged, so the blob, last modified 60 days ago, passes the 45-day condition. The tier change still happens only when a daily policy run processes the blob.
+- **B. Incorrect:** Yes; a read counts as an update to the blob, so the 45-day window starts again. This confuses access with modification. Reading a blob does not rewrite its content, so the last-modified time stays at 60 days ago. A write such as Put Blob would restart this clock.
+- **C. Incorrect:** Yes; the condition is evaluated against the blob's last access time once last-access tracking exists. Access time is a separate clock and applies only to a rule that uses daysAfterLastAccessTimeGreaterThan, which also requires access time tracking. This rule uses the modification condition, so yesterday's read does not matter, even if tracking is enabled.
+- **D. Incorrect:** Yes; the read automatically moves the blob back to hot, which cancels the transition to cool. enableAutoTierToHotFromCool applies only to blobs already in the cool tier, works only together with the last-access condition, and must be defined in a rule. This rule defines no such action, and the blob has not been tiered yet, so a read cannot cancel its eligibility.
 
-Study: [knowledge file](../knowledge/storage/blob-storage/lifecycle-management.md). Evidence checked: 2026-10-01.
+Study: [knowledge file](../knowledge/storage/blob-storage/lifecycle-management.md). Evidence checked: 2026-10-03.
 
 [Microsoft source 1](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure)
 
