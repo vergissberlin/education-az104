@@ -92,7 +92,7 @@
     {
       "id": "nw-nsg-state",
       "family": "nw-nsg-state",
-      "revision": 1,
+      "revision": 2,
       "topic": "networking.security.nsg-asg",
       "objectives": [
         "nw-06"
@@ -103,23 +103,23 @@
       "options": [
         {
           "id": "a",
-          "text": "NSGs filter only UDP.",
-          "explanation": "NSGs also filter TCP, including SSH."
+          "text": "The subnet NSG evaluates only new connections, while the NIC NSG keeps allowing established ones.",
+          "explanation": "Subnet and NIC NSGs both evaluate inbound traffic, the subnet NSG first, and neither has a separate role for established connections. The behavior comes from per-flow connection state, not from where the NSG is associated."
         },
         {
           "id": "b",
-          "text": "Rule removal requires deleting the NIC.",
-          "explanation": "NSG changes do not require NIC deletion."
+          "text": "A default inbound rule keeps allowing the first session until the virtual machine restarts.",
+          "explanation": "Default rules are ordinary rules evaluated by priority, and none re-allows a specific session until a restart. Existing connections continue because a flow record exists for them, regardless of the default rules."
         },
         {
           "id": "c",
-          "text": "NSGs retain state for existing flows; new connections use the changed rules.",
-          "explanation": "This explains the different outcomes."
+          "text": "NSGs track existing flows, so removing the allow rule affects only new connection attempts.",
+          "explanation": "An NSG creates a flow record for an existing connection and allows or denies its traffic based on that connection state. Rule changes apply only to new connections, so the open SSH session continues. The new SSH attempt is evaluated against the current rules, no rule allows it any longer, and the DenyAllInbound default rule drops it."
         },
         {
           "id": "d",
-          "text": "SSH automatically bypasses NSGs after one login.",
-          "explanation": "Application login does not grant a firewall bypass for new sessions."
+          "text": "NSG rules are tied to the client's source address, so the original client stays allowed.",
+          "explanation": "Rules match the five-tuple of source, source port, destination, destination port, and protocol, and removing the rule affects every source. The original session stays up because its flow is already tracked, and a new connection from the same client address is denied as well."
         }
       ],
       "correct": [
@@ -131,7 +131,7 @@
         "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups",
         "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
       ],
-      "verified": "2026-10-02"
+      "verified": "2026-10-03"
     }
   ]
 }

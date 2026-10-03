@@ -371,8 +371,14 @@ history above for publication status; do not request approval for it again.
 Proposed content follow-up: review the remaining live bank against the revised
 skill, prioritizing distractor plausibility and explanation quality; revise
 only items with identified defects. A full-bank editing pass was outside this
-three-question increment. The sample's two flagged items have not yet been
-changed.
+three-question increment. The sample's two flagged items were revised on
+2026-10-03 (`st-life-003`, `nw-nsg-state`, both revision 2; distractors and
+rationales rewritten, keys unchanged, Microsoft sources re-read that day;
+`id-effective-additive` was kept as reviewed). `pnpm run build`, `pnpm run check`
+and `pnpm test` (34 tests) passed; browser checks were not run. An automated
+heuristic screen (option length, absolute words, rationale length) flagged
+nearly every question and was discarded as unusable; the remaining 319 items
+still need the manual review against the skill, one topic at a time.
 
 The skill-review findings are resolved. Use the revised workflow for the next
 requested authoring or review task, and retain acceptance cases for future

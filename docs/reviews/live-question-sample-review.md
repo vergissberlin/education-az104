@@ -144,3 +144,10 @@ therefore says nothing conclusive about the bank's multiple-answer logic,
 variant quality, all-domain difficulty balance, or complete pattern coverage.
 Further review should examine those separately. The skill's batch guidance is
 not a reason to inflate every concise question into a long case study.
+
+## Follow-up (2026-10-03)
+
+`st-life-003` and `nw-nsg-state` were revised to revision 2 following the
+dispositions above; `id-effective-additive` was left unchanged. Keys are
+unchanged; the replacement alternatives and rationales were checked against the
+cited Microsoft pages on 2026-10-03.

@@ -184,18 +184,18 @@
       "sources":["https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"],"verified":"2026-10-01"
     },
     {
-      "id":"st-life-003","family":"st-life-write-versus-read","revision":1,
+      "id":"st-life-003","family":"st-life-write-versus-read","revision":2,
       "topic":"storage.blobs.lifecycle","objectives":["st-16"],"difficulty":"applied",
       "prompt":"An enabled rule tiers a current block blob to cool when daysAfterModificationGreaterThan is 45. The blob was last modified 60 days ago and was read yesterday. It matches every filter and tiering is supported. Does yesterday's read make it ineligible under this condition?",
       "select":1,
       "options":[
-        {"id":"no","text":"No; eligibility here depends on last modification, not last read.","explanation":"Reading the blob does not reset the last-modified timestamp used by this condition. Execution still depends on the policy run."},
-        {"id":"yes","text":"Yes; every read resets the last-modified timestamp.","explanation":"This confuses access time with modification time."},
-        {"id":"creation","text":"Yes; the condition always uses the container's creation date.","explanation":"The configured condition refers to the individual blob's modification age."},
-        {"id":"disabled","text":"Yes; reading a blob disables lifecycle rules for that container.","explanation":"Reading data does not disable the account's lifecycle policy."}
+        {"id":"no","text":"No; the condition measures time since the last modification, and a read does not change that timestamp.","explanation":"daysAfterModificationGreaterThan compares the current blob's last-modified time with the threshold. A read leaves that timestamp unchanged, so the blob, last modified 60 days ago, passes the 45-day condition. The tier change still happens only when a daily policy run processes the blob."},
+        {"id":"yes","text":"Yes; a read counts as an update to the blob, so the 45-day window starts again.","explanation":"This confuses access with modification. Reading a blob does not rewrite its content, so the last-modified time stays at 60 days ago. A write such as Put Blob would restart this clock."},
+        {"id":"access","text":"Yes; the condition is evaluated against the blob's last access time once last-access tracking exists.","explanation":"Access time is a separate clock and applies only to a rule that uses daysAfterLastAccessTimeGreaterThan, which also requires access time tracking. This rule uses the modification condition, so yesterday's read does not matter, even if tracking is enabled."},
+        {"id":"autotier","text":"Yes; the read automatically moves the blob back to hot, which cancels the transition to cool.","explanation":"enableAutoTierToHotFromCool applies only to blobs already in the cool tier, works only together with the last-access condition, and must be defined in a rule. This rule defines no such action, and the blob has not been tiered yet, so a read cannot cancel its eligibility."}
       ],
       "correct":["no"],"knowledge":"knowledge/storage/blob-storage/lifecycle-management.md",
-      "sources":["https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"],"verified":"2026-10-01"
+      "sources":["https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"],"verified":"2026-10-03"
     },
     {
       "id":"st-life-004","family":"st-life-whole-policy","revision":1,
