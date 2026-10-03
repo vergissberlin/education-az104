@@ -1,4 +1,4 @@
-import { topicStats, compareStats, weakest } from './quiz.mjs';
+import { topicStats, compareStats, weakest, dailyStats } from './quiz.mjs';
 
 // Analysis charts (Chart.js, vendored in ./vendor and loaded on first use).
 // mode 'compare': this test vs. the learning state before it (session results).
@@ -135,11 +135,78 @@ export function renderAnalysis(root, options) {
   return draw(root);
 }
 
+// Activity over the last 60 days: questions answered per day (bars) and pooled hit rate per day (line).
+const TIMELINE_DAYS = 60;
+const dayLabel = date => new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+async function drawTimeline(root) {
+  const state = mounted.get(root); if (!state) return;
+  const { options, ui } = state;
+  const days = dailyStats(options.attempts, options.bank.questions, { days: TIMELINE_DAYS });
+  const active = days.filter(d => d.answered > 0);
+  state.chart?.destroy(); state.chart = null;
+  ui.canvasBox.hidden = ui.details.hidden = active.length === 0; ui.empty.hidden = active.length > 0;
+  ui.table.replaceChildren();
+  if (!active.length) { ui.empty.textContent = `No answers in the last ${TIMELINE_DAYS} days yet.`; ui.summary.textContent = ''; return; }
+  const total = active.reduce((n, d) => n + d.answered, 0), right = active.reduce((n, d) => n + d.correct, 0);
+  ui.summary.textContent = `Last ${TIMELINE_DAYS} days: ${total} questions on ${active.length} days, ${pct(right / total)} correct on average.`;
+  const t = el('table', undefined, 'my-2 w-full border-collapse text-[.86rem]');
+  const tr = el('tr'); ['Day', 'Questions', 'Correct', 'Average'].forEach(h => { const th = el('th', h, 'border-b border-line p-1.5 text-left'); th.scope = 'col'; tr.append(th); });
+  t.append(el('thead')); t.tHead.append(tr);
+  const body = el('tbody');
+  for (const d of [...active].reverse()) {
+    const row = el('tr');
+    [dayLabel(d.date), d.answered, d.correct, pct(d.rate)].forEach((c, i) => row.append(el(i ? 'td' : 'th', String(c), 'border-b border-line p-1.5 text-left')));
+    body.append(row);
+  }
+  t.append(body); ui.table.append(t);
+  ui.canvas.setAttribute('aria-label', `Questions answered and average hit rate per day over the last ${TIMELINE_DAYS} days. A data table follows.`);
+  ui.canvasBox.style.height = '280px';
+  let Chart;
+  try { Chart = await loadChart(); } catch (error) { ui.empty.hidden = false; ui.empty.textContent = `${error.message} The data table below still shows the values.`; ui.canvasBox.hidden = true; ui.details.open = true; return; }
+  if (state.chart || !mounted.has(root)) return;
+  const colors = palette();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  state.chart = new Chart(ui.canvas, {
+    data: {
+      labels: days.map(d => dayLabel(d.date)),
+      datasets: [
+        { type: 'line', label: 'Average correct (%)', data: days.map(d => d.rate === null ? null : Math.round(d.rate * 100)), yAxisID: 'rate', order: 0,
+          borderColor: colors.brand, backgroundColor: colors.brand, borderWidth: 2, pointRadius: 3, spanGaps: false, tension: 0 },
+        { type: 'bar', label: 'Questions answered', data: days.map(d => d.answered), yAxisID: 'count', order: 1, backgroundColor: colors.edge, borderRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: reduced ? false : undefined,
+      scales: {
+        x: { ticks: { color: colors.soft, maxRotation: 0, autoSkipPadding: 12 }, grid: { display: false } },
+        rate: { position: 'left', min: 0, max: 100, ticks: { color: colors.soft, callback: v => `${v}%` }, grid: { color: colors.line } },
+        count: { position: 'right', min: 0, ticks: { color: colors.soft, precision: 0 }, grid: { display: false } },
+      },
+      plugins: { legend: { labels: { color: colors.ink } } },
+    },
+  });
+}
+
+// options: { bank, attempts }
+export function renderTimeline(root, options) {
+  unmount(root);
+  const canvas = el('canvas'); canvas.setAttribute('role', 'img');
+  const canvasBox = el('div', undefined, 'relative my-3'); canvasBox.append(canvas);
+  const summary = el('p', undefined, 'sr-only'); summary.setAttribute('role', 'status');
+  const empty = el('p', undefined, 'my-3 bg-notice p-3'); empty.hidden = true;
+  const tableBox = el('div');
+  const details = el('details'); details.append(el('summary', 'Show the data as a table', 'cursor-pointer text-[.86rem]'), tableBox);
+  root.replaceChildren(canvasBox, summary, empty, details);
+  mounted.set(root, { options: { ...options, mode: 'timeline' }, ui: { canvas, canvasBox, summary, empty, details, table: tableBox }, chart: null });
+  return drawTimeline(root);
+}
+
 export function unmount(root) {
   mounted.get(root)?.chart?.destroy();
   mounted.delete(root);
 }
 
 // Charts take their colours at draw time, so redraw when the theme switches.
-new MutationObserver(() => { for (const root of mounted.keys()) if (root.offsetParent !== null) draw(root); })
+new MutationObserver(() => { for (const [root, { options }] of mounted) if (root.offsetParent !== null) (options.mode === 'timeline' ? drawTimeline : draw)(root); })
   .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

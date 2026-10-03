@@ -166,3 +166,28 @@ export function weakest(units, minAnswers = 3) {
   return units.filter(u => u.answered >= minAnswers)
     .sort((a, b) => a.rate - b.rate || b.answered - a.answered || a.title.localeCompare(b.title));
 }
+
+// Local calendar day (YYYY-MM-DD) of a Date.
+const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Answers per local calendar day for the last `days` days (oldest first, ending today). Every answer counts,
+// not only the latest per family. "Unsure" is answered but not correct; outdated revisions and unknown questions
+// are ignored. `rate` is null on days without answers.
+export function dailyStats(attempts, questions, { days = 60, now = new Date() } = {}) {
+  const bank = new Map(questions.map(q => [q.id, q]));
+  const list = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    list.push({ date: dayKey(d), answered: 0, correct: 0, rate: null });
+  }
+  const byDate = new Map(list.map(day => [day.date, day]));
+  for (const attempt of attempts) {
+    const q = bank.get(attempt.id);
+    const day = q && attempt.revision === q.revision ? byDate.get(dayKey(new Date(attempt.at))) : undefined;
+    if (!day) continue;
+    day.answered++;
+    if (!isUnsure(attempt) && score(q, attempt.selected)) day.correct++;
+  }
+  for (const day of list) day.rate = day.answered ? day.correct / day.answered : null;
+  return list;
+}

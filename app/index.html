@@ -113,6 +113,11 @@
       <h2 id="analysis-title" tabindex="-1" class="text-[1.35rem] leading-snug font-bold">Weakest areas</h2>
       <p class="text-[.86rem] text-soft">Error rate per area, based on the latest answer to each question family in this browser's study history. Areas with fewer than 3 answered families are left out. Unsure answers count as not correct. This is a study aid, not a prediction of the exam result.</p>
       <div id="analysis-chart"></div>
+      <section aria-labelledby="timeline-title" class="mt-8 border-t border-line pt-5">
+        <h3 id="timeline-title" class="text-[1.1rem] font-bold">Last 60 days</h3>
+        <p class="text-[.86rem] text-soft">Questions answered per day (bars) and the share of correct answers on that day (line). Days follow your local time; every answer counts, unsure answers count as not correct. Days without practice stay empty.</p>
+        <div id="analysis-timeline"></div>
+      </section>
     </section>
     <section id="doc" class="my-6 rounded-xl border border-line bg-surface p-4 sm:p-6.5" hidden>
       <p class="flex flex-wrap items-center gap-x-4 text-[.86rem]"><a href="#" id="doc-back" class="inline-flex items-center gap-1.5"><svg class="icon size-4" aria-hidden="true"><use href="./vendor/icons.svg#arrow-left"/></svg>Back to practice</a><a id="doc-raw" target="_blank" rel="noopener">View raw Markdown</a></p>

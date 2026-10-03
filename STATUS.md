@@ -407,3 +407,15 @@ Do not start cloud labs without authorization for that separate scope.
   is available.
 - Study links expose Markdown; a formatted reader is outside this increment.
 - Supplementary service developments are labeled, not new exam objectives.
+
+## 60-day activity chart
+
+Added 2026-10-03 (branch `feature/analysis-timeline`, not merged or deployed):
+the analysis page has a "Last 60 days" chart: questions answered per day
+(bars) and the pooled share of correct answers per day (line), with a data
+table fallback. Days use the browser's local time, every answer counts (not
+only the latest per family), unsure counts as not correct, outdated revisions
+are ignored. Logic: `dailyStats` in `app/quiz.mjs`; rendering: `renderTimeline`
+in `app/analysis.mjs`. Verified manually with synthetic history in the
+built-in browser; `pnpm run build`, `pnpm run check` and `pnpm test`
+(35 tests) pass. `pnpm run test:browser` was not run. Next: review and merge.
