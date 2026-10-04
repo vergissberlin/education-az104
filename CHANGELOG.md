@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/vergissberlin/education-az104/compare/az-104-study-v0.4.0...az-104-study-v0.5.0) (2026-10-04)
+
+
+### Features
+
+* **app:** add splash screen for the installed PWA ([6b3df2c](https://github.com/vergissberlin/education-az104/commit/6b3df2c8345bfe7574456c1561d14be62b840e9c))
+* **app:** add splash screen for the installed PWA ([83bff64](https://github.com/vergissberlin/education-az104/commit/83bff6439874fd3eb00663f3969164f924125d23))
+
+
+### Bug Fixes
+
+* **app:** scroll to top of question card on next question ([9b0ca5e](https://github.com/vergissberlin/education-az104/commit/9b0ca5e6a7dc10dc99cf15f8f61059a80585ac45))
+* **app:** scroll to top of question card on next question ([c306bbd](https://github.com/vergissberlin/education-az104/commit/c306bbd7af666eea11a2a21ed4b667c1caaf2a4e))
+
 ## [0.4.0](https://github.com/vergissberlin/education-az104/compare/az-104-study-v0.3.0...az-104-study-v0.4.0) (2026-10-04)
 
 
