@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.0](https://github.com/vergissberlin/education-az104/compare/az-104-study-v0.3.0...az-104-study-v0.4.0) (2026-10-04)
+
+
+### Features
+
+* **app:** add 60-day activity chart to the analysis page ([1dd55a4](https://github.com/vergissberlin/education-az104/commit/1dd55a4cde449db37cea15c39974013786cb90e9))
+* **app:** add 60-day activity chart to the analysis page ([9c49084](https://github.com/vergissberlin/education-az104/commit/9c49084c19d35fe28b48350577e622f9ca00cf09))
+* **app:** colour answers, verdict icon, smooth scrolling, portrait PWA ([6ba83bc](https://github.com/vergissberlin/education-az104/commit/6ba83bc90b83755cd24740aa5dd03b219d91bcf3))
+* **app:** header title returns to start page ([95b7a3f](https://github.com/vergissberlin/education-az104/commit/95b7a3f36d65fff3ce756d06caa058737c4d3abe))
+* **app:** header title returns to start page, confirming during a session ([cd25950](https://github.com/vergissberlin/education-az104/commit/cd2595037aa6d11c467ef2868b31d105cc49a171))
+* **app:** inline Tailwind components, add Lucide icons and in-app dialogs ([d2911cb](https://github.com/vergissberlin/education-az104/commit/d2911cb3ec27d487785d36fc4048ac1ed2198aab))
+* **app:** inline Tailwind components, add Lucide icons and in-app dialogs ([aa9b5aa](https://github.com/vergissberlin/education-az104/commit/aa9b5aaa53589152dbb6e2a87be9dde40a51539b))
+* **app:** make exam question header easier to read ([e9e47a0](https://github.com/vergissberlin/education-az104/commit/e9e47a05fad2e938796a9fca39a2bfb8bd2a916f))
+* **app:** make exam question header easier to read ([8ab1eb3](https://github.com/vergissberlin/education-az104/commit/8ab1eb36bfa0c628ce2f1426c5d96c995a4e21bc))
+* **app:** quiz feedback UX and portrait-only PWA ([a184e05](https://github.com/vergissberlin/education-az104/commit/a184e05825b3ca460ec179e36846ffa9de389493))
+
+
+### Bug Fixes
+
+* **app:** make update reload button resilient to stale service worker ([#20](https://github.com/vergissberlin/education-az104/issues/20)) ([961aaf0](https://github.com/vergissberlin/education-az104/commit/961aaf05f9bb875aad3c37f9eea05fdcb509c1a7))
+* **ci:** restore generated icon sprite and exclude it from ImgBot ([224e138](https://github.com/vergissberlin/education-az104/commit/224e1389b27452aea1edb95b8db1d34cc39f0dcb))
+
 ## [0.3.0](https://github.com/vergissberlin/education-az104/compare/az-104-study-v0.2.0...az-104-study-v0.3.0) (2026-10-03)
 
 
