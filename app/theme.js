@@ -10,4 +10,7 @@
   root.dataset.themePref = pref;
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = dark ? '#0f1a22' : '#f0f4f6';
+  // Show the splash only in an installed PWA (standalone window, or iOS home-screen app).
+  var standalone = (matchMedia('(display-mode: standalone)').matches || navigator.standalone === true);
+  if (standalone) root.dataset.splash = '';
 })();
