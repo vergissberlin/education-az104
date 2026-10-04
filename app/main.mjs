@@ -11,6 +11,16 @@ function el(tag, text, className) {
   if (className) node.className = className;
   return node;
 }
+// Lucide icon from the same-origin sprite; the literal href lets scripts/build-icons.mjs find the icon.
+function icon(href, className = 'size-6') {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
+  svg.setAttribute('class', `icon shrink-0 ${className}`); svg.setAttribute('aria-hidden', 'true');
+  use.setAttribute('href', href); svg.append(use); return svg;
+}
+// Smooth scrolling unless the user asked the OS for reduced motion.
+const scrollBehavior = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+const scrollToNode = node => node.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
 // Theme preference cycles system → light → dark; "system" follows the OS setting live.
 const THEMES = ['system', 'light', 'dark'];
 const systemDark = matchMedia('(prefers-color-scheme: dark)');
@@ -93,13 +103,18 @@ function topicContext(q) {
 }
 function explain(q, selected, compact = false, unsure = false) {
   const box = el('div');
-  box.append(unsure ? el('p', 'Marked as unsure — saved for later review. This does not count as correct.', 'border-l-4 border-notice-line pl-3.5')
-    : el('p', score(q, selected) ? 'Correct answer set.' : 'Incorrect answer set.', `border-l-4 pl-3.5 ${score(q, selected) ? 'border-good' : 'border-bad'}`));
+  const right = score(q, selected);
+  const verdict = el('p', undefined, `flex items-center gap-2.5 border-l-4 pl-3.5 text-[1.15rem] font-bold ${unsure ? 'border-notice-line' : right ? 'border-good text-good' : 'border-bad text-bad'}`);
+  verdict.id = 'answer-verdict'; verdict.tabIndex = -1; verdict.className += ' scroll-mt-4 outline-none';
+  verdict.append(unsure ? icon('./vendor/icons.svg#circle-help') : right ? icon('./vendor/icons.svg#circle-check') : icon('./vendor/icons.svg#circle-x'),
+    el('span', unsure ? 'Unsure — saved for later review. This does not count as correct.' : right ? 'Correct' : 'Incorrect'));
+  box.append(verdict);
   for (const option of q.options) {
     const good = q.correct.includes(option.id);
     if (compact && !selected.includes(option.id) && !good) continue;
     const p = el('p', undefined, `explanation my-3 border-l-4 pb-1.5 pl-3.5 ${good ? 'border-good' : 'border-bad'}`);
     p.dataset.optionId = option.id;
+    if (!compact) p.id = `answer-${option.id}`;
     p.append(el('strong', `${good ? 'Correct' : 'Incorrect'} option${selected.includes(option.id) ? ' · selected' : ''}: ${option.text} `), document.createTextNode(option.explanation));
     box.append(p);
   }
@@ -117,7 +132,7 @@ function renderPrompt(q) {
   nodes.push(el('span', task, 'q-task'));
   $('prompt').replaceChildren(...nodes);
 }
-function renderQuestion() {
+function renderQuestion(scroll = true) {
   const q = active[position]; submitted = false;
   $('position').textContent = `${mode} · Question ${position + 1} of ${active.length}`;
   $('question-topic').textContent = topicContext(q);
@@ -136,7 +151,7 @@ function renderQuestion() {
   $('choices').disabled = false; $('submit-answer').hidden = false; $('unsure-answer').hidden = false;
   $('submit-answer').textContent = mode === 'practice' ? 'Check answer' : 'Submit answer';
   $('feedback').replaceChildren(); $('next').hidden = true;
-  $('prompt').focus();
+  $('prompt').focus({ preventScroll: !scroll });
 }
 // Exam countdown (test mode only). The remaining time derives from a fixed deadline, so it neither
 // drifts nor pauses when the tab is throttled, hidden, or the device sleeps — like the real exam clock.
@@ -205,7 +220,7 @@ $('start-form').addEventListener('submit', event => {
       missed: $('missed').value === 'none' ? null : reviewFamilies(attempts, bank.questions, $('missed').value) });
     if (!active.length) { message('No question families match this selection. Change the topic or the review filter.'); return; }
     if (active.length < Number($('count').value)) message(`This selection has ${active.length} available families; the session uses all of them.`);
-    mode = $('mode').value; position = 0; answers = []; sessionStart = attempts.length; show('session'); renderQuestion();
+    mode = $('mode').value; position = 0; answers = []; sessionStart = attempts.length; show('session'); renderQuestion(false); scrollToNode($('session'));
     if (mode === 'test') {
       const minutes = Number($('minutes').value);
       startTimer(Number.isFinite(minutes) && minutes >= 1 ? minutes : examMinutes(active.length));
@@ -218,9 +233,21 @@ function record(q, selected, unsure = false) {
   attempts = attempts.slice(-10000); save();
   if (mode === 'test') { advance(); return; }
   $('choices').disabled = true; $('submit-answer').hidden = true; $('unsure-answer').hidden = true;
+  markChoices(q, selected);
   $('feedback').append(explain(q, selected, false, unsure));
+  scrollToNode($('answer-verdict'));
   $('next').hidden = false; $('next').textContent = position + 1 === active.length ? 'View results' : 'Next question';
-  $('next').focus();
+  $('next').focus({ preventScroll: true });
+}
+// Colour every choice after "Check answer": correct options green, selected wrong options red.
+function markChoices(q, selected) {
+  for (const input of $('choices').querySelectorAll('input')) {
+    const label = input.closest('label'), good = q.correct.includes(input.value);
+    if (!good && !selected.includes(input.value)) continue;
+    label.classList.add(...(good ? ['border-good!', 'bg-good/10!'] : ['border-bad!', 'bg-bad/10!']));
+    label.append(icon(good ? './vendor/icons.svg#circle-check' : './vendor/icons.svg#circle-x', `ml-auto size-5 ${good ? 'text-good' : 'text-bad'}`));
+    label.append(el('span', good ? 'Correct option' : 'Incorrect option', 'sr-only'));
+  }
 }
 $('answer-form').addEventListener('submit', event => {
   event.preventDefault(); if (submitted) return;

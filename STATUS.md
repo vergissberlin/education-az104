@@ -317,6 +317,18 @@ document offline, and cycles the theme. Not verified: installation on a real
 phone/desktop, Lighthouse, and the live Pages deployment (GitHub Pages sends
 `Cache-Control: max-age=600` for sw.js, so updates can lag up to ~10 minutes).
 
+## Quiz feedback UX
+
+Added 2026-10-04 (branch feature/quiz-feedback-ux): manifest locks the PWA to
+portrait; "Check answer" colours choices (correct green, selected wrong red, with
+icon and screen-reader text), shows a verdict with a check/x icon at the top of the
+feedback, and smooth-scrolls to it (anchor `#answer-verdict`; instant under
+prefers-reduced-motion); starting a session smooth-scrolls to the question card.
+Verified: pnpm run build, check, test (35 pass); colours and verdict checked in
+the in-app browser. Not verified: scroll animation (pane had zero viewport height),
+browser check (Chrome failed to launch here), portrait lock on a real device
+(iOS ignores the manifest orientation).
+
 ## Search and agent discovery
 
 Added 2026-10-03 (branch `feature/seo-discovery`, not yet merged or deployed):
