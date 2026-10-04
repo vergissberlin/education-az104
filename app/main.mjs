@@ -262,7 +262,8 @@ document.addEventListener('keydown', event => {
   if (event.target.closest?.('input, select, textarea')) return;
   event.preventDefault(); $('unsure-answer').click();
 });
-function advance() { if (++position < active.length) renderQuestion(); else finish(); }
+// Next question: render without the focus-induced scroll, then bring the whole question card into view.
+function advance() { if (++position < active.length) { renderQuestion(false); scrollToNode($('session')); } else finish(); }
 $('next').addEventListener('click', advance);
 // In-app confirmation (native confirm() is suppressed in embedded browsers and cannot be styled).
 function ask(text, okLabel = 'Confirm') {
