@@ -387,3 +387,15 @@ try {
   summarize(); show('setup');
 } catch (error) { message(error.message); $('coverage').textContent = 'Question bank unavailable.'; }
 await route(); // deep links such as #/doc/knowledge/index.md work even if the question bank failed to load
+
+// Dismiss the PWA splash (see theme.js and #splash) once the app is ready; keep it briefly so it never just flashes.
+{
+  const splash = document.getElementById('splash');
+  if (splash) {
+    const wait = Math.max(0, 600 - performance.now());
+    setTimeout(() => {
+      splash.classList.add('done');
+      setTimeout(() => { splash.remove(); delete document.documentElement.dataset.splash; }, 400);
+    }, wait);
+  }
+}
